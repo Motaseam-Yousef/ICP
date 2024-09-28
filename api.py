@@ -40,15 +40,19 @@ df = apply_mappings(df)
 
 # Define the scoring equation for customer quality
 def calculate_customer_quality(df):
-    # Normalize Total Spend
+    # Initialize scaler and scale the necessary columns
     scaler = MinMaxScaler((0, 100))
-    df['Total Spend Scaled'] = scaler.fit_transform(df[['Total Spend']])
+    
+    # Create a subset of the columns to scale
+    df[['Total Spend Scaled', 'Membership Scaled', 'Items Purchased Scaled']] = scaler.fit_transform(
+        df[['Total Spend', 'Membership Type', 'Items Purchased']]
+    )
     
     # Calculate the quality score
     df['Customer Quality Score'] = (
-        0.5 * df['Total Spend Scaled'] +           # 50% weight to Total Spend (scaled)
-        0.3 * df['Membership Type'] +              # 30% weight to Membership Type
-        0.2 * df['Satisfaction Level']             # 20% weight to Satisfaction Level
+        0.4 * df['Total Spend Scaled'] +           # 40% weight to Total Spend (scaled)
+        0.3 * df['Membership Scaled'] +            # 30% weight to Membership Type (scaled)
+        0.3 * df['Items Purchased Scaled']         # 30% weight to Items Purchased (scaled)
     )
     return df
 
@@ -60,7 +64,6 @@ def customer_quality():
     age_range = user_input['AgeRange']  # Expecting something like [20, 40]
     gender = user_input['Gender']       # Can be ['Male'], ['Female'], or ['Male', 'Female']
     cities = user_input['Cities']       # List of cities ['New York', 'Miami', 'Chicago']
-    price = user_input['Price']
 
     # Step 1: Filter customers based on user inputs
     filtered_customers = df[
@@ -75,8 +78,12 @@ def customer_quality():
     # Step 2: Calculate the Customer Quality Score for the filtered customers
     filtered_customers = calculate_customer_quality(filtered_customers)
 
-    # Step 3: Sort the customers by their quality score in descending order
+    # Step 3: Sort the customers by their quality score in descending order and filter by score > 55
     sorted_customers = filtered_customers.sort_values(by='Customer Quality Score', ascending=False)
+    sorted_customers = sorted_customers[sorted_customers['Customer Quality Score'] > 55]
+
+    if sorted_customers.empty:
+        return jsonify({"message": "No customers with a score greater than 55."})
 
     # Prepare the result with Customer ID and the corresponding Quality Score
     result = pd.DataFrame({
