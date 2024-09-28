@@ -135,6 +135,7 @@ if submitted:
 
         # Step 3: Sort the customers by their quality score in descending order
         sorted_customers = filtered_customers.sort_values(by='Customer Quality Score', ascending=False)
+        sorted_customers = sorted_customers[sorted_customers['Customer Quality Score'] > 55]
 
         # Prepare the result with Customer ID and the corresponding Quality Score
         result = pd.DataFrame({
