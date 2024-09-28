@@ -37,14 +37,14 @@ st.title("📊 Customer Quality Scoring App")
 st.write("""
     Welcome to the **Customer Quality Scoring App**. Use the form below to filter customers and 
     get a ranked list of the highest quality customers based on their **Total Spend**, **Membership Type**, 
-    and **Satisfaction Level**.
+    and **Items Purchased**.
 """)
 
 # Define the mappings for Gender, Membership Type, Satisfaction Level, Discount Applied, and City
 gender_map = {'Female': 1, 'Male': 0}
 membership_map = {'Gold': 5, 'Silver': 3, 'Bronze': 1}
 satisfaction_map = {'Satisfied': 1, 'Unsatisfied': -1, 'Neutral': 0}
-discount_map = {True: 1, False: 0}  # Make sure this is defined here
+discount_map = {True: 1, False: 0}
 city_map = {
     'Houston': 1,
     'Miami': 2,
@@ -55,7 +55,7 @@ city_map = {
 }
 
 # Load the CSV file into a pandas DataFrame (Upload this file to Streamlit Cloud as well)
-@st.cache_data  # Updated caching function
+@st.cache_data
 def load_data():
     file_path = "data/E-commerce Customer.csv"  # Make sure this file is available in your repo
     df = pd.read_csv(file_path)
@@ -74,15 +74,18 @@ df = load_data()
 
 # Define the scoring equation for customer quality
 def calculate_customer_quality(filtered_customers):
-    # Normalize Total Spend
+    # Normalize Total Spend, Membership Type, and Items Purchased
     scaler = MinMaxScaler((0, 100))
     filtered_customers['Total Spend Scaled'] = scaler.fit_transform(filtered_customers[['Total Spend']])
+    filtered_customers['Membership Scaled'] = scaler.fit_transform(filtered_customers[['Membership Type']])
+    filtered_customers['Items Purchased Scaled'] = scaler.fit_transform(filtered_customers[['Items Purchased']])
     
     # Calculate the quality score
     filtered_customers['Customer Quality Score'] = (
-        0.5 * filtered_customers['Total Spend Scaled'] +  # 50% weight to Total Spend (scaled)
-        0.3 * filtered_customers['Membership Type'] +     # 30% weight to Membership Type
-        0.2 * filtered_customers['Satisfaction Level']    # 20% weight to Satisfaction Level
+        0.4 * filtered_customers['Total Spend Scaled'] +     # 40% weight to Total Spend (scaled)
+        0.25 * filtered_customers['Membership Scaled'] +     # 25% weight to Membership Type (scaled)
+        0.3 * filtered_customers['Items Purchased Scaled'] + # 30% weight to Items Purchased (scaled)
+        0.05 * filtered_customers['Satisfaction Level']      # 5% weight to Satisfaction Level (optional)
     )
     return filtered_customers
 
@@ -145,3 +148,4 @@ if submitted:
 
         # Display the sorted customer quality score as an interactive table
         st.dataframe(result.style.background_gradient(cmap="Greens", subset=["Customer Quality Score"]))
+        
